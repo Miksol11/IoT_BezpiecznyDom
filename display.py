@@ -1,5 +1,9 @@
 import os
+import sys
 try:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    sys.path.append(parent_dir)
     import lib.oled.SSD1331 as SSD1331
     display_available = True
 except ModuleNotFoundError:
@@ -26,3 +30,12 @@ def show(image):
         disp.ShowImage(image, 0, 0) #żeby pokazać IRL na ekraniku
     else:
         image.show() #żeby pokazać na komputerze podczas testów
+
+def test():
+    from PIL import Image
+    getDisp()
+    image = Image.new("RGB", SCREEN_RESOLUTION, "red")
+    show(image)
+
+if __name__ == "__main__":
+    test()

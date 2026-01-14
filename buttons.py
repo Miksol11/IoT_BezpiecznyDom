@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     try:
         import keyboard
     except ModuleNotFoundError:
-        pass
+        keyboard = None
 
 BUTTON_DEBOUNCE_TIME = 200
 ENCODER_DEBOUNCE_TIME = 50
@@ -26,7 +26,11 @@ def connectButton(button, event, encoder=False):
         if encoder:
             GPIO.add_event_detect(button, GPIO.FALLING, callback=lambda e: encoderCallback(button, event), bouncetime=ENCODER_DEBOUNCE_TIME)
         else:
-            GPIO.add_event_detect(button, GPIO.FALLING, callback= lambda e: event(), bouncetime=BUTTON_DEBOUNCE_TIME)
+            def callback_handler(channel):
+                if GPIO.input(channel) == 0:
+                    event()
+            
+            GPIO.add_event_detect(button, GPIO.FALLING, callback=callback_handler, bouncetime=BUTTON_DEBOUNCE_TIME)
                 
         connection_dict[button] = True
     else:
