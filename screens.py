@@ -4,12 +4,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FONT_FILE = os.path.join(SCRIPT_DIR, 'sources', 'Font.ttf')
+LOGO_FILE = os.path.join(SCRIPT_DIR, 'images', 'logo.png')
 
 def getBlackScreen():
     return Image.new("RGB", display.SCREEN_RESOLUTION, "black")
 
 def getLogoScreen():
-    return Image.open(os.path.join("./images/logo.png")).convert("RGB")
+    return Image.open(LOGO_FILE).convert("RGB")
 
 def getPinScreen(current_digit, current_pass):
     password = len(current_pass) * "* "
