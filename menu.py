@@ -15,7 +15,7 @@ class Page:
 
 pages = [
     Page("pogoda", screens.getWeatherScreen),
-    Page("karty", screens.getCardScreen),
+    Page("karty", lambda: screens.getCardsMenuScreen(2)),
     Page("standbyConfirm", lambda: screens.getStandbyScreen(False))
 ]
 current_page_index = 0

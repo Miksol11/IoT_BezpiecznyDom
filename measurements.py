@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 
-from config import *
-import board
-import busio
-import adafruit_bme280.advanced as adafruit_bme280
+
+try:
+    from config import *
+    import board
+    import busio
+    import adafruit_bme280.advanced as adafruit_bme280
+    HARDWARE_AVAILABLE = True
+except (ImportError, ModuleNotFoundError, NotImplementedError):
+    HARDWARE_AVAILABLE = False
+    # Fallback mocks if needed
+    board = None
+    busio = None
+    adafruit_bme280 = None
+
 import time
 import os
 import threading
@@ -21,15 +31,22 @@ _last_send_time = 0.0
 
 def setup():
     global bme280
-    i2c = busio.I2C(board.SCL, board.SDA)
-    bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, 0x76)
+    if not HARDWARE_AVAILABLE:
+        return
 
-    bme280.sea_level_pressure = 1015.5
-    bme280.standby_period = adafruit_bme280.STANDBY_TC_500
-    bme280.iir_filter = adafruit_bme280.IIR_FILTER_X16
-    bme280.overscan_pressure = adafruit_bme280.OVERSCAN_X16
-    bme280.overscan_humidity = adafruit_bme280.OVERSCAN_X1
-    bme280.overscan_temperature = adafruit_bme280.OVERSCAN_X2
+    try:
+        i2c = busio.I2C(board.SCL, board.SDA)
+        bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, 0x76)
+
+        bme280.sea_level_pressure = 1015.5
+        bme280.standby_period = adafruit_bme280.STANDBY_TC_500
+        bme280.iir_filter = adafruit_bme280.IIR_FILTER_X16
+        bme280.overscan_pressure = adafruit_bme280.OVERSCAN_X16
+        bme280.overscan_humidity = adafruit_bme280.OVERSCAN_X1
+        bme280.overscan_temperature = adafruit_bme280.OVERSCAN_X2
+    except Exception as e:
+        print(f"Błąd inicjalizacji BME280: {e}")
+
 
 def ensureBME():
     global bme280
@@ -37,18 +54,29 @@ def ensureBME():
         setup()
 
 def getTemperature():
+    if not HARDWARE_AVAILABLE:
+        import random
+        return 20.0 + random.uniform(-2, 2)
     ensureBME()
     return bme280.temperature
 
 def getPressure():
+    if not HARDWARE_AVAILABLE:
+        import random
+        return 1013.25 + random.uniform(-10, 10)
     ensureBME()
     return bme280.pressure
 
 def getHumidity():
+    if not HARDWARE_AVAILABLE:
+        import random
+        return 50.0 + random.uniform(-5, 5)
     ensureBME()
     return bme280.humidity
 
 def getAltitude():
+    if not HARDWARE_AVAILABLE:
+        return 100.0
     ensureBME()
     return bme280.altitude
 
@@ -56,7 +84,8 @@ def getAltitude():
 def _ensure_mqtt():
     global _mqtt_client
     if mqtt is None:
-        raise RuntimeError("Brak biblioteki paho-mqtt. Zainstaluj: sudo pip3 install paho-mqtt")
+        # Jeśli nie ma biblioteki paho-mqtt, zwracamy None (tryb mock bez MQTT)
+        return None
 
     if _mqtt_client is not None:
         return _mqtt_client
@@ -75,7 +104,8 @@ def _ensure_mqtt():
         client.connect(broker, port, keepalive=60)
         client.loop_start()
     except Exception as e:
-        raise RuntimeError(f"Nie można połączyć z brokerem MQTT {broker}:{port}: {e}")
+        print(f"Błąd połączenia MQTT (tryb offline?): {e}")
+        return None
 
     _mqtt_client = client
     return _mqtt_client
@@ -90,7 +120,11 @@ def sendMeasurements():
             return False  # zbyt często, pominięte
         _last_send_time = now
 
-    ensureBME()
+    if HARDWARE_AVAILABLE:
+        ensureBME()
+        if bme280 is None:
+            return False
+
     try:
         temperature = getTemperature()
         pressure = getPressure()
@@ -99,7 +133,8 @@ def sendMeasurements():
     except Exception as e:
         with _mqtt_lock:
             _last_send_time = 0.0
-        raise
+        print(f"Błąd odczytu sensorów: {e}")
+        return False
 
     payload = {
         "temperature": float(round(temperature, 2)),
@@ -109,13 +144,50 @@ def sendMeasurements():
         "ts": int(time.time())
     }
 
+    if not HARDWARE_AVAILABLE:
+        print(f"[MOCK] Pomiary: {payload}")
+
     topic = globals().get('MQTT_TOPIC', 'sensors/bme280')
 
     try:
         client = _ensure_mqtt()
-        client.publish(topic, json.dumps(payload), qos=1)
-        return True
+        if client:
+            client.publish(topic, json.dumps(payload), qos=1)
+            return True
+        else:
+            return True
     except Exception:
         with _mqtt_lock:
             _last_send_time = 0.0
-        raise
+        return False
+
+
+# Logika wątku w tle
+
+_background_thread = None
+_stop_background = threading.Event()
+
+def _background_loop():
+    while not _stop_background.is_set():
+        try:
+            sendMeasurements()
+        except Exception as e:
+            print(f"Błąd w wątku pomiarowym: {e}")
+        
+        time.sleep(1)
+
+def start_background_loop():
+    global _background_thread
+    if _background_thread is None or not _background_thread.is_alive():
+        _stop_background.clear()
+        _background_thread = threading.Thread(target=_background_loop, daemon=True)
+        _background_thread.start()
+        print("Uruchomiono wątek pomiarów w tle.")
+
+def stop_background_loop():
+    _stop_background.set()
+    global _background_thread
+    if _background_thread:
+        _background_thread.join(timeout=2.0)
+        _background_thread = None
+        print("Zatrzymano wątek pomiarów.")

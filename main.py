@@ -3,22 +3,28 @@ import login
 import menu
 import time
 import measurements
+import cardManager
 
 states = {
     "standby": standby.standbyMode,
     "login": login.loginMode,
     "menu": menu.menuMode,
-    "standbyConfirm": standby.standbyConfirmMode
+    "standbyConfirm": standby.standbyConfirmMode,
+    "karty": cardManager.menuMode
 }
 
 def main():
+    # Uruchomienie pomiarów w tle (wątek)
+    measurements.start_background_loop()
+
     state = "standby"
     while True:
-        # state = states[state]()
-        # time.sleep(0.05)
-        measurements.sendMeasurements()
-        time.sleep(2)
-        print("wysłano pomiary")
+        try:
+           state = states[state]()
+        except Exception as e:
+            print(f"Error in state {state}: {e}")
+            time.sleep(1)
+
 
 if __name__ == "__main__":
     main()
