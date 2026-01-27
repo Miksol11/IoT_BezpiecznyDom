@@ -3,7 +3,7 @@ import buttons
 import time
 try:
     import RPi.GPIO as GPIO
-    from config import *
+    from pi.config import *
 except ModuleNotFoundError:
     pass
 

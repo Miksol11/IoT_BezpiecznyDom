@@ -14,7 +14,6 @@ states = {
 }
 
 def main():
-    # Uruchomienie pomiarów w tle (wątek)
     measurements.start_background_loop()
 
     state = "standby"
