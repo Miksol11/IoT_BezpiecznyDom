@@ -8,7 +8,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-PIN = "1234"
+PIN = "0000"
 digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 entered_pin = ""
 current_digit = '0'
@@ -18,7 +18,7 @@ needs_redraw = True
 def loginMode():
     global entered_pin, current_digit, next_state, needs_redraw
 
-    entered_pin = ""
+    entered_pin = "000"
     current_digit = '0'
     next_state = None
     needs_redraw = True

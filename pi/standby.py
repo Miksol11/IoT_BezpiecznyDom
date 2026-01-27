@@ -2,9 +2,13 @@ import time
 import display
 import buttons
 import screens
+import rfid_module
+import mqtt
+HARDWARE_AVAILABLE = False
 try:
     import RPi.GPIO as GPIO
     from config import *
+    HARDWARE_AVAILABLE = True
 except ModuleNotFoundError:
     pass
 
@@ -24,13 +28,48 @@ def standbyMode():
     enter_time = time.time()
     logoScreen()
     while True:
+        result = rfid_module.check_card(False)
+        if result:
+            is_card_good = mqtt.card_exists(str(result))
+            effects(is_card_good)
         if enter_time >= 0 and time.time() - enter_time >= TIMEOUT:
             blackScreen()
+            
             enter_time = -1
         if next_state:
             return next_state
         sendData()
         time.sleep(0.05)
+
+
+def effects(success):
+    global pixels
+    if not HARDWARE_AVAILABLE:
+        print("efekty świelne i dzwiękowe (to ważne)")
+        return
+
+    if success:
+        pixels.fill((0, 0, 255))
+        pixels.show()
+        GPIO.output(buzzerPin, 0)
+        time.sleep(1)
+    else:
+        pixels.fill((255, 0, 0))
+        pixels.show()
+        GPIO.output(buzzerPin, 0)
+        time.sleep(0.1)
+        GPIO.output(buzzerPin, 1)
+        time.sleep(0.2)
+        GPIO.output(buzzerPin, 0)
+        time.sleep(0.1)
+        GPIO.output(buzzerPin, 1)
+        time.sleep(0.2)
+        GPIO.output(buzzerPin, 0)
+        time.sleep(0.1)
+
+    GPIO.output(buzzerPin, 1)
+    pixels.fill((0, 0, 0))
+    pixels.show()
 
 def standbyConfirmMode():
     global next_state

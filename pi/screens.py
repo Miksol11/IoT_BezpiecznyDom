@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FONT_FILE = os.path.join(SCRIPT_DIR, 'sources', 'Font.ttf')
 LOGO_FILE = os.path.join(SCRIPT_DIR, 'images', 'logo.png')
+ICONS_DIR = os.path.join(SCRIPT_DIR, 'icons')
 
 def getBlackScreen():
     return Image.new("RGB", display.SCREEN_RESOLUTION, "black")
@@ -151,6 +152,21 @@ def getStatusScreen(title, line1, line2="", line3=""):
     
     return image
 
+def getWeatherScreen(measurements):
+    image = Image.new("RGB", display.SCREEN_RESOLUTION, "White")
+    if measurements is not None:
+        measurements.popitem()
+        print(measurements)
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.truetype(FONT_FILE, 14)
+        height = 0
+        for key in measurements:
+            icon = Image.open(f'{ICONS_DIR}/{key}.png')
+            image.paste(icon, (0, height), icon)
+            draw.text((18, height), f"{measurements[key]}", font=font, fill="BLACK")
+            height+=16
+
+    return image
 
 def testCardsScreens():
     import time

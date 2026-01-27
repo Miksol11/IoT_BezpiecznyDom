@@ -2,6 +2,7 @@ import buttons
 import display
 import screens
 import time
+import measurements
 try:
     import RPi.GPIO as GPIO
     from config import *
@@ -14,16 +15,17 @@ class Page:
         self.image = image
 
 pages = [
-    Page("pogoda", screens.getWeatherScreen),
+    Page("pogoda", lambda: screens.getWeatherScreen(measurements.lastMeasurementsJson)),
     Page("karty", lambda: screens.getCardsMenuScreen(2)),
     Page("standbyConfirm", lambda: screens.getStandbyScreen(False))
 ]
 current_page_index = 0
 next_state = None
 needs_redraw = True
+last_measurements = None
 
 def menuMode():
-    global current_page_index, needs_redraw, next_state
+    global current_page_index, needs_redraw, next_state, last_measurements
 
     current_page_index = 0
     next_state = None
@@ -35,6 +37,10 @@ def menuMode():
     buttons.connectEncoderRight(nextPage)
     
     while True:
+        # if current_page_index == 0 and last_measurements != measurements.lastMeasurementsJson:
+        #     last_measurements = measurements.lastMeasurementsJson
+        #     pages[0].image = lambda: screens.getWeatherScreen(measurements.lastMeasurementsJson)
+        #     needs_redraw = True
         if next_state:
             return next_state
         if needs_redraw:

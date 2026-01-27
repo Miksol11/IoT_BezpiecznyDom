@@ -4,6 +4,7 @@ import buttons
 import display
 import screens
 import rfid_module
+import mqtt
 
 try:
     import RPi.GPIO as GPIO
@@ -31,27 +32,29 @@ result_timestamp = 0
 needs_redraw = True
 
 
-mockCards = ["111111", "222222", "123456", "987654"]
+# mockCards = ["111111", "222222", "123456", "987654"]
 
 def mockAddCard(uid):
-    print(f"[BACKEND] Dodawanie karty {uid}...")
-    time.sleep(0.5) 
-    if str(uid) in mockCards:
+    uid = str(uid)
+    if mqtt.add_card(uid):
+        print(f"[BACKEND] Dodawanie karty {uid}...")
+        return True
+    else:
         return False
-    mockCards.append(str(uid))
-    return True
 
 def mockGetCards():
-    print(f"[BACKEND] Pobieranie listy kart...")
-    time.sleep(0.5)
-    return mockCards
+    list = mqtt.list_cards()
+    if list:
+        print(f"[BACKEND] Pobieranie listy kart...")
+    # time.sleep(0.5)
+    return list
 
 def mockDeleteCard(uid):
-    print(f"[BACKEND] Usuwanie karty {uid}...")
-    time.sleep(0.5)
-    if str(uid) in mockCards:
-        mockCards.remove(str(uid))
-    return True
+    uid = str(uid)
+    if mqtt.delete_card(uid):
+        print(f"[BACKEND] Usuwanie karty {uid}...")
+        return True
+    return False
 
 # --- Logika Sterowania ---
 

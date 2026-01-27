@@ -2,7 +2,7 @@ from paho.mqtt.client import Client
 import db
 import json
 
-BROKER_HOST = "192.168.1.10"
+BROKER_HOST = "127.0.0.1" #10.108.33.106
 BROKER_PORT = 1883
 
 REQ_ADD_TOPIC = "cards/add"

@@ -74,7 +74,7 @@ def uid_to_int(uid):
     return num
 
 
-def check_card():
+def check_card(need_effects=True):
     global reader, card_present, stable_reads
     
     if not HARDWARE_AVAILABLE:
@@ -91,9 +91,10 @@ def check_card():
                 stable_reads = 0
                 if not card_present:
                     print(f"SYMULACJA: Wykryto kartę UID: {simulated_uid}")
-                    effects(True)
-                    time.sleep(0.2)
-                    effects(False)
+                    if need_effects:
+                        effects(True)
+                        time.sleep(0.2)
+                        effects(False)
                     card_present = True
                     return simulated_uid
             else:
@@ -115,10 +116,10 @@ def check_card():
             
             if not card_present:
                 print("UID: ", uid_num, " Time: ", datetime.datetime.now().strftime("%H:%M:%S"))
-                
-                effects(True)
-                time.sleep(0.2)
-                effects(False)
+                if need_effects:
+                    effects(True)
+                    time.sleep(0.2)
+                    effects(False)
                 
                 card_present = True
                 return uid_num

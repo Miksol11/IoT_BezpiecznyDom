@@ -28,6 +28,7 @@ bme280 = None
 _mqtt_client = None
 _mqtt_lock = threading.Lock()
 _last_send_time = 0.0
+lastMeasurementsJson = None
 
 def setup():
     global bme280
@@ -90,7 +91,7 @@ def _ensure_mqtt():
     if _mqtt_client is not None:
         return _mqtt_client
 
-    broker = globals().get('MQTT_BROKER', '10.108.33.106')
+    broker = globals().get('MQTT_BROKER', 'localhost')
     port = globals().get('MQTT_PORT', 1883)
     user = globals().get('MQTT_USER', "mati")
     password = globals().get('MQTT_PASSWORD', "siems")
@@ -109,10 +110,9 @@ def _ensure_mqtt():
 
     _mqtt_client = client
     return _mqtt_client
-# ...existing code...
 
 def sendMeasurements():
-    global _last_send_time
+    global _last_send_time, lastMeasurementsJson
 
     now = time.time()
     with _mqtt_lock:
@@ -144,6 +144,8 @@ def sendMeasurements():
         "ts": int(time.time())
     }
 
+    lastMeasurementsJson = payload
+
     if not HARDWARE_AVAILABLE:
         print(f"[MOCK] Pomiary: {payload}")
 
@@ -152,6 +154,7 @@ def sendMeasurements():
     try:
         client = _ensure_mqtt()
         if client:
+            # siems tu można przypisać do zmiennej globalnej B)
             client.publish(topic, json.dumps(payload), qos=1)
             return True
         else:
